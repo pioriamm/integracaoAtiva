@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:baixa_arquivos/enum/tipo_arquivo.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import '../interfaces/Iconfig.dart';
 import '../modelos/integracao_prametros.dart';
@@ -29,7 +32,19 @@ class IntegracaoConfig implements IConfig {
       'DataFinal': parametros.dataFim,
     };
 
-    final chave = parametros.IdIntegracao == 68 ? 'Tipo' : 'step';
+    final rawEnv = dotenv.env['ADQUIRENTES_POR_TIPO'];
+
+    final Set<int> adquirentesPorTipo = rawEnv != null
+        ? (jsonDecode(rawEnv) as List<dynamic>)
+        .map((e) => int.tryParse(e.toString()))
+        .whereType<int>()
+        .toSet()
+        : {};
+
+    final chave = adquirentesPorTipo.contains(parametros.IdIntegracao)
+        ? 'Tipo'
+        : 'step';
+
     body[chave] = tipoDeArquivo.valor;
 
     return body;

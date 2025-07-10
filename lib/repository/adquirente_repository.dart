@@ -1,20 +1,21 @@
 import 'dart:convert';
 import 'package:baixa_arquivos/modelos/adquirentes.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 
 class AdquirenteRepository {
 
 
   static Future<List<Adquirentes>> buscarAdquirentes() async {
-    final String _baseUrl = 'https://api.conciliadora.com.br/api/Adquirentes';
-    final String _authToken = 'b6f05efd-e899-425b-8933-2f6ac4165b99';
+    final String _baseUrl = dotenv.env['URL_BASE_LOGO'] ?? '';
+    final String _key = dotenv.env['AUTH_TOKEN'] ?? '';
 
     try {
       final uri = Uri.parse(_baseUrl);
       final response = await http.get(
         uri,
         headers: {
-          'Authorization': _authToken,
+          'Authorization': _key,
           'Content-Type': 'application/json',
         },
       );

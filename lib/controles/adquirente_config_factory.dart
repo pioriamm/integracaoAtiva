@@ -6,6 +6,7 @@ import '../interfaces/Iconfig.dart';
 import 'integracao_config.dart';
 
 class AdquirenteConfigFactory {
+
   static IConfig criar({
     required TipoAdquirente tipoAdquirente,
     required DateTime dataInicio,
@@ -22,4 +23,5 @@ class AdquirenteConfigFactory {
       ListaRefosPRs: refPRId,
     );
   }
+
 }

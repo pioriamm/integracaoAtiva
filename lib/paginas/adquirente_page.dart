@@ -1,6 +1,9 @@
+import 'dart:convert';
+
 import 'package:baixa_arquivos/enum/tipo_adquirente.dart';
 import 'package:baixa_arquivos/enum/tipo_arquivo.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 
 import '../controles/adquirente_config_factory.dart';
@@ -17,19 +20,9 @@ class AdquirentePage extends StatefulWidget {
 
 class _AdquirentePageState extends State<AdquirentePage> {
   late List<Adquirentes> _listaAdquirentes = [];
-  final List<int> _adquirentesAtivasIds = [
-    07,
-    68,
-    45,
-    16,
-    97,
-    53,
-    95,
-    3,
-    109,
-    112,
-    76,
-  ];
+  final String? idAdquirentes = dotenv.env['ADQUIRENTES_HABILITADAS'];
+  late final List<int> _adquirentesAtivasIds;
+
   bool _carregandoAdquirentes = true;
 
   final TextEditingController _pesquisaController = TextEditingController();
@@ -37,8 +30,13 @@ class _AdquirentePageState extends State<AdquirentePage> {
 
   @override
   void initState() {
-    super.initState();
+    final String? idAdquirentes = dotenv.env['ADQUIRENTES_HABILITADAS'];
+    _adquirentesAtivasIds = idAdquirentes != null
+        ? List<int>.from(jsonDecode(idAdquirentes))
+        : [];
+
     _carregarAdquirentes();
+    super.initState();
   }
 
   @override

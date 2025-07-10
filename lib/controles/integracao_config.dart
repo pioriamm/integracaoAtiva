@@ -1,9 +1,9 @@
 import 'package:baixa_arquivos/enum/tipo_arquivo.dart';
 
-import 'adquirente_config.dart';
+import '../interfaces/Iconfig.dart';
 import '../modelos/integracao_prametros.dart';
 
-class IntegracaoConfig implements AdquirenteConfig {
+class IntegracaoConfig implements IConfig {
   final IntegracaoPrametros parametros;
   final TipoArquivo tipoDeArquivo;
 
@@ -11,21 +11,20 @@ class IntegracaoConfig implements AdquirenteConfig {
     required int IdIntegracao,
     required String DataInicial,
     required String DataFinal,
-    required List<int> Ids,
+    required List<int> ListaRefosPRs,
     required this.tipoDeArquivo,
   }) : parametros = IntegracaoPrametros(
-    IdIntegracao: IdIntegracao,
-    dataInicio: DataInicial,
-    dataFim: DataFinal,
-    Ids: Ids,
-  );
+         IdIntegracao: IdIntegracao,
+         dataInicio: DataInicial,
+         dataFim: DataFinal,
+         listaRefosPrs: ListaRefosPRs,
+       );
 
   @override
-  Map<String, dynamic> toBody() {
-
+  Map<String, dynamic> gerarPayload() {
     final Map<String, dynamic> body = {
       'IdIntegracao': parametros.IdIntegracao,
-      'Ids': parametros.Ids,
+      'Ids': parametros.listaRefosPrs,
       'DataInicial': parametros.dataInicio,
       'DataFinal': parametros.dataFim,
     };

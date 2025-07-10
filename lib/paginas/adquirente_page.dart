@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 
 import '../controles/adquirente_config_factory.dart';
-import '../repository/adquirente_repository.dart';
 import '../modelos/adquirentes.dart';
+import '../repository/adquirente_repository.dart';
 import '../repository/integracao_ativa_repository.dart';
 
 class AdquirentePage extends StatefulWidget {
@@ -17,7 +17,19 @@ class AdquirentePage extends StatefulWidget {
 
 class _AdquirentePageState extends State<AdquirentePage> {
   late List<Adquirentes> _listaAdquirentes = [];
-  final List<int> _adquirentesAtivasIds = [07, 68, 45, 16, 97, 53, 95, 3, 109, 112, 76];
+  final List<int> _adquirentesAtivasIds = [
+    07,
+    68,
+    45,
+    16,
+    97,
+    53,
+    95,
+    3,
+    109,
+    112,
+    76,
+  ];
   bool _carregandoAdquirentes = true;
 
   final TextEditingController _pesquisaController = TextEditingController();
@@ -36,7 +48,10 @@ class _AdquirentePageState extends State<AdquirentePage> {
       appBar: AppBar(
         backgroundColor: Color(0xFF103239),
         centerTitle: true,
-        title: const Text('Selecione uma Adquirente', style: TextStyle(color: Colors.white),),
+        title: const Text(
+          'Selecione uma Adquirente',
+          style: TextStyle(color: Colors.white),
+        ),
       ),
       body: Padding(
         padding: EdgeInsets.symmetric(
@@ -104,9 +119,9 @@ class _AdquirentePageState extends State<AdquirentePage> {
 
   void _mostrarSnackBar(String mensagem, Color cor) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(mensagem), backgroundColor: cor),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(mensagem), backgroundColor: cor));
   }
 
   Widget _buildGridAdquirentes() {
@@ -139,9 +154,7 @@ class _AdquirentePageState extends State<AdquirentePage> {
             duration: const Duration(milliseconds: 375),
             columnCount: 2,
             child: ScaleAnimation(
-              child: FadeInAnimation(
-                child: _buildAdquirenteCard(adquirente),
-              ),
+              child: FadeInAnimation(child: _buildAdquirenteCard(adquirente)),
             ),
           );
         },
@@ -150,7 +163,9 @@ class _AdquirentePageState extends State<AdquirentePage> {
   }
 
   Widget _buildAdquirenteCard(Adquirentes adquirente) {
-    final bool estaHabilitada = _adquirentesAtivasIds.contains(adquirente.codigo);
+    final bool estaHabilitada = _adquirentesAtivasIds.contains(
+      adquirente.codigo,
+    );
     return Card(
       elevation: 4.0,
       clipBehavior: Clip.antiAlias,
@@ -168,21 +183,43 @@ class _AdquirentePageState extends State<AdquirentePage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-
             ColorFiltered(
               colorFilter: estaHabilitada
-                  ? const ColorFilter.mode(Colors.transparent, BlendMode.overlay)
+                  ? const ColorFilter.mode(
+                      Colors.transparent,
+                      BlendMode.overlay,
+                    )
                   : const ColorFilter.matrix(<double>[
-                0.2126, 0.7152, 0.0722, 0, 0,
-                0.2126, 0.7152, 0.0722, 0, 0,
-                0.2126, 0.7152, 0.0722, 0, 0,
-                0, 0, 0, 1, 0,
-              ]),
+                      0.2126,
+                      0.7152,
+                      0.0722,
+                      0,
+                      0,
+                      0.2126,
+                      0.7152,
+                      0.0722,
+                      0,
+                      0,
+                      0.2126,
+                      0.7152,
+                      0.0722,
+                      0,
+                      0,
+                      0,
+                      0,
+                      0,
+                      1,
+                      0,
+                    ]),
               child: Image.network(
                 adquirente.urlImage ?? '',
                 height: 60,
                 errorBuilder: (context, error, stackTrace) {
-                  return const Icon(Icons.business, size: 60, color: Colors.grey);
+                  return const Icon(
+                    Icons.business,
+                    size: 60,
+                    color: Colors.grey,
+                  );
                 },
                 loadingBuilder: (context, child, loadingProgress) {
                   if (loadingProgress == null) return child;
@@ -217,9 +254,12 @@ class _AdquirentePageState extends State<AdquirentePage> {
     );
   }
 
-  Future<void> _mostrarFormularioPopup(BuildContext context, Adquirentes adquirente) async {
+  Future<void> _mostrarFormularioPopup(
+    BuildContext context,
+    Adquirentes adquirente,
+  ) async {
     final tipoAdquirente = TipoAdquirente.values.firstWhere(
-          (e) => e.name.toLowerCase() == (adquirente.nome ?? '').toLowerCase(),
+      (e) => e.name.toLowerCase() == (adquirente.nome ?? '').toLowerCase(),
       orElse: () => TipoAdquirente.Default,
     );
 
@@ -228,6 +268,7 @@ class _AdquirentePageState extends State<AdquirentePage> {
     DateTime dataInicio = DateTime.now().subtract(const Duration(days: 1));
     DateTime dataFim = DateTime.now();
     List<int> refPRId = [];
+    int? idAdquirente = adquirente.codigo;
     final refController = TextEditingController();
     bool carregandoEnvio = false;
 
@@ -247,6 +288,7 @@ class _AdquirentePageState extends State<AdquirentePage> {
               setStateInDialog(() => carregandoEnvio = true);
               try {
                 final config = AdquirenteConfigFactory.criar(
+                  id: idAdquirente!,
                   tipoAdquirente: tipoAdquirente,
                   dataInicio: dataInicio,
                   dataFim: dataFim,
@@ -257,7 +299,10 @@ class _AdquirentePageState extends State<AdquirentePage> {
                 if (Navigator.of(dialogContext).canPop()) {
                   Navigator.of(dialogContext).pop();
                 }
-                _mostrarSnackBar('Solicitação agendada com sucesso!', Colors.green);
+                _mostrarSnackBar(
+                  'Solicitação agendada com sucesso!',
+                  Colors.green,
+                );
               } catch (e) {
                 _mostrarSnackBar('Erro ao enviar requisição.', Colors.red);
               } finally {
@@ -273,12 +318,18 @@ class _AdquirentePageState extends State<AdquirentePage> {
                 lastDate: DateTime(2100),
               );
               if (selecionada != null) {
-                setStateInDialog(() => isInicio ? dataInicio = selecionada : dataFim = selecionada);
+                setStateInDialog(
+                  () => isInicio
+                      ? dataInicio = selecionada
+                      : dataFim = selecionada,
+                );
               }
             }
 
             return AlertDialog(
-              title: Text('Solicitar arquivo ${adquirente.nome ?? "Adquirente"}'),
+              title: Text(
+                'Solicitar arquivo ${adquirente.nome ?? "Adquirente"}',
+              ),
               content: SizedBox(
                 width: MediaQuery.of(context).size.width * 0.4,
                 height: MediaQuery.of(context).size.height * 0.5,
@@ -289,20 +340,27 @@ class _AdquirentePageState extends State<AdquirentePage> {
                       children: [
                         TextFormField(
                           initialValue: (adquirente.nome ?? '').toUpperCase(),
-                          decoration: const InputDecoration(labelText: 'Adquirente'),
+                          decoration: const InputDecoration(
+                            labelText: 'Adquirente',
+                          ),
                           enabled: false,
                         ),
                         const SizedBox(height: 16),
                         DropdownButtonFormField<TipoArquivo>(
                           value: tipoDeArquivo,
                           items: TipoArquivo.values
-                              .map((e) => DropdownMenuItem(
-                            value: e,
-                            child: Text(e.name.toUpperCase()),
-                          ))
+                              .map(
+                                (e) => DropdownMenuItem(
+                                  value: e,
+                                  child: Text(e.name.toUpperCase()),
+                                ),
+                              )
                               .toList(),
-                          onChanged: (v) => setStateInDialog(() => tipoDeArquivo = v!),
-                          decoration: const InputDecoration(labelText: 'Tipo de Operação'),
+                          onChanged: (v) =>
+                              setStateInDialog(() => tipoDeArquivo = v!),
+                          decoration: const InputDecoration(
+                            labelText: 'Tipo de Operação',
+                          ),
                         ),
                         const SizedBox(height: 16),
                         Row(
@@ -311,9 +369,12 @@ class _AdquirentePageState extends State<AdquirentePage> {
                               child: InkWell(
                                 onTap: () => selecionarData(isInicio: true),
                                 child: InputDecorator(
-                                  decoration: const InputDecoration(labelText: 'Data Início'),
+                                  decoration: const InputDecoration(
+                                    labelText: 'Data Início',
+                                  ),
                                   child: Text(
-                                      '${dataInicio.day.toString().padLeft(2, '0')}/${dataInicio.month.toString().padLeft(2, '0')}/${dataInicio.year}'),
+                                    '${dataInicio.day.toString().padLeft(2, '0')}/${dataInicio.month.toString().padLeft(2, '0')}/${dataInicio.year}',
+                                  ),
                                 ),
                               ),
                             ),
@@ -322,9 +383,12 @@ class _AdquirentePageState extends State<AdquirentePage> {
                               child: InkWell(
                                 onTap: () => selecionarData(isInicio: false),
                                 child: InputDecorator(
-                                  decoration: const InputDecoration(labelText: 'Data Fim'),
+                                  decoration: const InputDecoration(
+                                    labelText: 'Data Fim',
+                                  ),
                                   child: Text(
-                                      '${dataFim.day.toString().padLeft(2, '0')}/${dataFim.month.toString().padLeft(2, '0')}/${dataFim.year}'),
+                                    '${dataFim.day.toString().padLeft(2, '0')}/${dataFim.month.toString().padLeft(2, '0')}/${dataFim.year}',
+                                  ),
                                 ),
                               ),
                             ),

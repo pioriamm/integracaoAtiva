@@ -11,7 +11,6 @@ import '../modelos/adquirentes.dart';
 import '../repository/adquirente_repository.dart';
 import '../repository/integracao_ativa_repository.dart';
 
-
 class AdquirentePage extends StatefulWidget {
   const AdquirentePage({super.key});
 
@@ -34,17 +33,131 @@ class _AdquirentePageState extends State<AdquirentePage> {
     _adquirentesAtivasIds = idAdquirentes != null
         ? List<int>.from(jsonDecode(idAdquirentes))
         : [];
-
     _carregarAdquirentes();
     super.initState();
+  }
+
+  Future<void> _carregarAdquirentes() async {
+    setState(() => _carregandoAdquirentes = true);
+    final adquirentes = await AdquirenteRepository.buscarAdquirentes();
+    if (mounted) {
+      setState(() {
+        _listaAdquirentes = adquirentes
+          ..sort((a, b) => (a.nome ?? '').compareTo(b.nome ?? ''));
+        _carregandoAdquirentes = false;
+      });
+    }
+  }
+
+  Future<void> _carregarSomenteAdquirentesHabilitadas() async {
+    setState(() => _carregandoAdquirentes = true);
+    final adquirentes = await AdquirenteRepository.buscarAdquirentes();
+    if (mounted) {
+      setState(() {
+        _listaAdquirentes = adquirentes
+            .where((a) => _adquirentesAtivasIds.contains(a.codigo))
+            .toList()
+          ..sort((a, b) => (a.nome ?? '').compareTo(b.nome ?? ''));
+        _carregandoAdquirentes = false;
+      });
+    }
+  }
+
+  void _filtrarAdquirentes() {
+    setState(() => _filtro = _pesquisaController.text.toLowerCase());
+  }
+
+  void _mostrarSnackBar(String mensagem, Color cor) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(mensagem), backgroundColor: cor),
+    );
+  }
+
+  Widget _buildAdquirenteCard(Adquirentes adquirente) {
+    final habilitada = _adquirentesAtivasIds.contains(adquirente.codigo);
+    return Card(
+      elevation: 4,
+      child: InkWell(
+        onTap: () {
+          if (habilitada) {
+            _mostrarFormularioPopup(context, adquirente);
+          } else {
+            _mostrarSnackBar(
+              'Adquirente "${adquirente.nome ?? ''}" não habilitada.',
+              Colors.orange,
+            );
+          }
+        },
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ColorFiltered(
+              colorFilter: habilitada
+                  ? const ColorFilter.mode(Colors.transparent, BlendMode.multiply)
+                  : const ColorFilter.matrix(<double>[
+                0.2126, 0.7152, 0.0722, 0, 0,
+                0.2126, 0.7152, 0.0722, 0, 0,
+                0.2126, 0.7152, 0.0722, 0, 0,
+                0, 0, 0, 1, 0,
+              ]),
+              child: Image.network(
+                adquirente.urlImage ?? '',
+                height: 60,
+                errorBuilder: (_, __, ___) => const Icon(Icons.business, size: 60),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(adquirente.nome ?? '', textAlign: TextAlign.center),
+            Text('${adquirente.codigo}', style: const TextStyle(fontSize: 12)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGridAdquirentes() {
+    if (_carregandoAdquirentes) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    final filtrados = _listaAdquirentes
+        .where((a) => (a.nome ?? '').toLowerCase().contains(_filtro))
+        .toList();
+    if (filtrados.isEmpty) {
+      return const Center(child: Text('Nenhuma adquirente encontrada.'));
+    }
+    return AnimationLimiter(
+      child: GridView.builder(
+        padding: const EdgeInsets.all(12),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 8,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+        ),
+        itemCount: filtrados.length,
+        itemBuilder: (context, index) {
+          final adquirente = filtrados[index];
+          return AnimationConfiguration.staggeredGrid(
+            position: index,
+            columnCount: 8,
+            duration: const Duration(milliseconds: 300),
+            child: ScaleAnimation(
+              child: FadeInAnimation(
+                child: _buildAdquirenteCard(adquirente),
+              ),
+            ),
+          );
+        },
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF103239),
+      backgroundColor: const Color(0xFFCCCCC),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF103239),
+        backgroundColor: const Color(0xFFCCCCC),
         centerTitle: true,
         title: const Text('Selecione uma Adquirente', style: TextStyle(color: Colors.white)),
       ),
@@ -55,165 +168,43 @@ class _AdquirentePageState extends State<AdquirentePage> {
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.all(12.0),
+              padding: const EdgeInsets.all(12),
               child: Row(
                 children: [
                   Expanded(
                     child: TextField(
-                      style: const TextStyle(color: Colors.white),
                       controller: _pesquisaController,
                       onChanged: (_) => _filtrarAdquirentes(),
+                     // style: const TextStyle(color: Colors.white),
                       decoration: const InputDecoration(
                         labelText: 'Pesquisar Adquirente',
                         prefixIcon: Icon(Icons.search, color: Colors.white),
+                        //labelStyle: TextStyle(color: Colors.white),
                         border: OutlineInputBorder(),
-                        labelStyle: TextStyle(color: Colors.white),
                         enabledBorder: OutlineInputBorder(
-                          borderSide: BorderSide(color: Colors.white),
+                          borderSide: BorderSide(color: Colors.black45),
                         ),
                         focusedBorder: OutlineInputBorder(
-                          borderSide: BorderSide(color: Colors.white),
+                          borderSide: BorderSide(color: Colors.black45),
                         ),
                       ),
                     ),
                   ),
                   const SizedBox(width: 16),
                   IconButton(
-                    color: Colors.white,
-                    icon: const Icon(Icons.refresh),
+                    icon: const Icon(Icons.refresh, color: Colors.black45),
+                    tooltip: 'Recarregar Tudo',
                     onPressed: _carregarAdquirentes,
-                    tooltip: 'Recarregar Lista',
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.filter_alt, color: Colors.black45),
+                    tooltip: 'Somente Habilitadas',
+                    onPressed: _carregarSomenteAdquirentesHabilitadas,
                   ),
                 ],
               ),
             ),
             Expanded(child: _buildGridAdquirentes()),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _carregarAdquirentes() async {
-    setState(() => _carregandoAdquirentes = true);
-    final adquirentes = await AdquirenteRepository.buscarAdquirentes();
-    if (mounted) {
-      setState(() {
-        _listaAdquirentes = adquirentes..sort((a, b) => (a.nome ?? '').compareTo(b.nome ?? ''));
-        _carregandoAdquirentes = false;
-      });
-    }
-  }
-
-  void _filtrarAdquirentes() {
-    setState(() {
-      _filtro = _pesquisaController.text.toLowerCase();
-    });
-  }
-
-  void _mostrarSnackBar(String mensagem, Color cor) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(mensagem), backgroundColor: cor),
-    );
-  }
-
-  Widget _buildGridAdquirentes() {
-    if (_carregandoAdquirentes) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    final adquirentesFiltrados = _listaAdquirentes
-        .where((a) => (a.nome ?? '').toLowerCase().contains(_filtro))
-        .toList();
-
-    if (adquirentesFiltrados.isEmpty) {
-      return const Center(child: Text('Nenhuma adquirente encontrada.'));
-    }
-
-    return AnimationLimiter(
-      child: GridView.builder(
-        padding: const EdgeInsets.all(12.0),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 8,
-          crossAxisSpacing: 12.0,
-          mainAxisSpacing: 12.0,
-          childAspectRatio: 1.2,
-        ),
-        itemCount: adquirentesFiltrados.length,
-        itemBuilder: (context, index) {
-          final adquirente = adquirentesFiltrados[index];
-          return AnimationConfiguration.staggeredGrid(
-            position: index,
-            duration: const Duration(milliseconds: 375),
-            columnCount: 2,
-            child: ScaleAnimation(
-              child: FadeInAnimation(child: _buildAdquirenteCard(adquirente)),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildAdquirenteCard(Adquirentes adquirente) {
-    final bool estaHabilitada = _adquirentesAtivasIds.contains(adquirente.codigo);
-    return Card(
-      elevation: 4.0,
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () {
-          if (adquirente.codigo != null && estaHabilitada) {
-            _mostrarFormularioPopup(context, adquirente);
-          } else {
-            _mostrarSnackBar(
-              'Adquirente "${adquirente.nome ?? ''}" com integração não implementada.',
-              Colors.orange,
-            );
-          }
-        },
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            ColorFiltered(
-              colorFilter: estaHabilitada
-                  ? const ColorFilter.mode(Colors.transparent, BlendMode.overlay)
-                  : const ColorFilter.matrix(<double>[
-                0.2126, 0.7152, 0.0722, 0, 0,
-                0.2126, 0.7152, 0.0722, 0, 0,
-                0.2126, 0.7152, 0.0722, 0, 0,
-                0, 0, 0, 1, 0,
-              ]),
-              child: Image.network(
-                adquirente.urlImage ?? '',
-                height: 60,
-                errorBuilder: (context, error, stackTrace) =>
-                const Icon(Icons.business, size: 60, color: Colors.grey),
-                loadingBuilder: (context, child, loadingProgress) {
-                  if (loadingProgress == null) return child;
-                  return const Center(child: CircularProgressIndicator());
-                },
-              ),
-            ),
-            const SizedBox(height: 12),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8.0),
-              child: Text(
-                adquirente.nome ?? 'Nome Indisponível',
-                style: Theme.of(context).textTheme.titleMedium,
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8.0),
-              child: Text(
-                adquirente.codigo.toString(),
-                style: Theme.of(context).textTheme.titleMedium,
-                textAlign: TextAlign.center,
-              ),
-            ),
           ],
         ),
       ),
@@ -315,9 +306,9 @@ class _AdquirentePageState extends State<AdquirentePage> {
                               child: InkWell(
                                 onTap: () => selecionarData(isInicio: true),
                                 child: InputDecorator(
-                                  decoration: const InputDecoration(labelText: 'Data Início'),
+                                  decoration: const InputDecoration(labelText: 'Data Início', ),
                                   child: Text(
-                                    '${dataInicio.day.toString().padLeft(2, '0')}/${dataInicio.month.toString().padLeft(2, '0')}/${dataInicio.year}',
+                                    '${dataInicio.day.toString().padLeft(2, '0')}/${dataInicio.month.toString().padLeft(2, '0')}/${dataInicio.year}', style: TextStyle(color: Colors.red),
                                   ),
                                 ),
                               ),
@@ -388,7 +379,7 @@ class _AdquirentePageState extends State<AdquirentePage> {
                           ),
                           padding: const EdgeInsets.symmetric(vertical: 16),
                         ),
-                        child: const Text('Enviar'),
+                        child: const Text('EVIAR'),
                       ),
                       const SizedBox(height: 8),
                       TextButton(
@@ -399,7 +390,7 @@ class _AdquirentePageState extends State<AdquirentePage> {
                           ),
                           padding: const EdgeInsets.symmetric(vertical: 16),
                         ),
-                        child: const Text('Cancelar'),
+                        child: const Text('CANCELAR'),
                       ),
                     ],
                   ),

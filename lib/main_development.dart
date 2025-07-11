@@ -4,7 +4,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'paginas/adquirente_page.dart';
 
 Future<void> main() async {
-  await dotenv.load(fileName: "appsettings.env");
+  await dotenv.load(fileName: "appsettings_staging.env");
   runApp(const AdquirenteApp());
 }
 

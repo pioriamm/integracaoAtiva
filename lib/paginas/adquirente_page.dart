@@ -1,16 +1,20 @@
 import 'dart:convert';
 
-import 'package:baixa_arquivos/enum/tipo_adquirente.dart';
-import 'package:baixa_arquivos/enum/tipo_arquivo.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 
+// --- SUAS DEPENDÊNCIAS E ARQUIVOS DE PROJETO ---
+// Mantive a estrutura para que você possa conectar seus arquivos reais.
+// Certifique-se de que os caminhos de import estão corretos no seu projeto.
 import '../controles/adquirente_config_factory.dart';
+import '../enum/tipo_adquirente.dart';
+import '../enum/tipo_arquivo.dart';
 import '../modelos/adquirentes.dart';
 import '../repository/adquirente_repository.dart';
 import '../repository/integracao_ativa_repository.dart';
 
+// --- PÁGINA PRINCIPAL COM O NOVO LAYOUT ---
 class AdquirentePage extends StatefulWidget {
   const AdquirentePage({super.key});
 
@@ -21,20 +25,19 @@ class AdquirentePage extends StatefulWidget {
 class _AdquirentePageState extends State<AdquirentePage> {
   late List<Adquirentes> _listaAdquirentes = [];
   late final List<int> _adquirentesAtivasIds;
-
   bool _carregandoAdquirentes = true;
-
-  final TextEditingController _pesquisaController = TextEditingController();
   String _filtro = '';
+  final TextEditingController _pesquisaController = TextEditingController();
 
   @override
   void initState() {
+    super.initState();
+
     final String? idAdquirentes = dotenv.env['ADQUIRENTES_HABILITADAS'];
     _adquirentesAtivasIds = idAdquirentes != null
         ? List<int>.from(jsonDecode(idAdquirentes))
         : [];
     _carregarAdquirentes();
-    super.initState();
   }
 
   Future<void> _carregarAdquirentes() async {
@@ -54,64 +57,142 @@ class _AdquirentePageState extends State<AdquirentePage> {
     final adquirentes = await AdquirenteRepository.buscarAdquirentes();
     if (mounted) {
       setState(() {
-        _listaAdquirentes = adquirentes
-            .where((a) => _adquirentesAtivasIds.contains(a.codigo))
-            .toList()
-          ..sort((a, b) => (a.nome ?? '').compareTo(b.nome ?? ''));
+        _listaAdquirentes =
+            adquirentes
+                .where((a) => _adquirentesAtivasIds.contains(a.codigo))
+                .toList()
+              ..sort((a, b) => (a.nome ?? '').compareTo(b.nome ?? ''));
         _carregandoAdquirentes = false;
       });
     }
   }
 
-  void _filtrarAdquirentes() {
-    setState(() => _filtro = _pesquisaController.text.toLowerCase());
+  void _filtrarAdquirentes(String query) {
+    setState(() => _filtro = query.toLowerCase());
   }
 
   void _mostrarSnackBar(String mensagem, Color cor) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(mensagem), backgroundColor: cor),
+      SnackBar(
+        content: Text(mensagem),
+        backgroundColor: cor,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.all(16),
+      ),
     );
   }
 
-  Widget _buildAdquirenteCard(Adquirentes adquirente) {
-    final habilitada = _adquirentesAtivasIds.contains(adquirente.codigo);
-    return Card(
-      elevation: 4,
-      child: InkWell(
-        onTap: () {
-          if (habilitada) {
-            _mostrarFormularioPopup(context, adquirente);
-          } else {
-            _mostrarSnackBar(
-              'Adquirente "${adquirente.nome ?? ''}" não habilitada.',
-              Colors.orange,
-            );
-          }
-        },
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            ColorFiltered(
-              colorFilter: habilitada
-                  ? const ColorFilter.mode(Colors.transparent, BlendMode.multiply)
-                  : const ColorFilter.matrix(<double>[
-                0.2126, 0.7152, 0.0722, 0, 0,
-                0.2126, 0.7152, 0.0722, 0, 0,
-                0.2126, 0.7152, 0.0722, 0, 0,
-                0, 0, 0, 1, 0,
-              ]),
-              child: Image.network(
-                adquirente.urlImage ?? '',
-                height: 60,
-                errorBuilder: (_, __, ___) => const Icon(Icons.business, size: 60),
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC), // Cor de fundo suave
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+          child: Column(
+            children: [
+              _buildHeader(),
+              _buildToolbar(),
+              Expanded(child: _buildGridAdquirentes()),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 32.0),
+      child: Column(
+        children: [
+          Text(
+            'Solicitação de Arquivos - ${dotenv.env['AMBIENTE']}',
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 32,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF0F172A),
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Selecione uma adquirente para iniciar o processo.',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 16, color: Color(0xFF475569)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildToolbar() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 24.0),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: _pesquisaController,
+              onChanged: _filtrarAdquirentes,
+              decoration: InputDecoration(
+                hintText: 'Pesquisar por nome...',
+                prefixIcon: Icon(
+                  Icons.search,
+                  color: Theme.of(context).primaryColor,
+                ),
+                filled: true,
+                fillColor: Colors.white,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Theme.of(context).primaryColor),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Color(0xff97d945), width: 2),
+                ),
               ),
             ),
-            const SizedBox(height: 8),
-            Text(adquirente.nome ?? '', textAlign: TextAlign.center),
-            Text('${adquirente.codigo}', style: const TextStyle(fontSize: 12)),
-          ],
+          ),
+          const SizedBox(width: 8),
+          _buildToolbarButton(
+            Icons.refresh,
+            'Recarregar Todas',
+            _carregarAdquirentes,
+          ),
+          const SizedBox(width: 8),
+          _buildToolbarButton(
+            Icons.filter_alt,
+            'Filtrar Habilitadas',
+            _carregarSomenteAdquirentesHabilitadas,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildToolbarButton(
+    IconData icon,
+    String tooltip,
+    VoidCallback onPressed,
+  ) {
+    return IconButton(
+      icon: Icon(icon, color: const Color(0xFF475569)),
+      tooltip: tooltip,
+      onPressed: onPressed,
+      style: IconButton.styleFrom(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: const BorderSide(color: Color(0xFFCBD5E1)),
         ),
+        padding: const EdgeInsets.all(12),
       ),
     );
   }
@@ -126,25 +207,28 @@ class _AdquirentePageState extends State<AdquirentePage> {
     if (filtrados.isEmpty) {
       return const Center(child: Text('Nenhuma adquirente encontrada.'));
     }
+
+    final screenWidth = MediaQuery.of(context).size.width;
+    final crossAxisCount = (screenWidth / 200).floor().clamp(1, 5);
+
     return AnimationLimiter(
       child: GridView.builder(
-        padding: const EdgeInsets.all(12),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 8,
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
+        padding: const EdgeInsets.only(bottom: 16),
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: crossAxisCount,
+          crossAxisSpacing: 16,
+          mainAxisSpacing: 16,
+          childAspectRatio: 0.9,
         ),
         itemCount: filtrados.length,
         itemBuilder: (context, index) {
           final adquirente = filtrados[index];
           return AnimationConfiguration.staggeredGrid(
             position: index,
-            columnCount: 8,
-            duration: const Duration(milliseconds: 300),
+            columnCount: crossAxisCount,
+            duration: const Duration(milliseconds: 375),
             child: ScaleAnimation(
-              child: FadeInAnimation(
-                child: _buildAdquirenteCard(adquirente),
-              ),
+              child: FadeInAnimation(child: _buildAdquirenteCard(adquirente)),
             ),
           );
         },
@@ -152,68 +236,101 @@ class _AdquirentePageState extends State<AdquirentePage> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFCCCCC),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFCCCCC),
-        centerTitle: true,
-        title: const Text('Selecione uma Adquirente', style: TextStyle(color: Colors.white)),
-      ),
-      body: Padding(
-        padding: EdgeInsets.symmetric(
-          horizontal: MediaQuery.of(context).size.width * 0.10,
-        ),
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Row(
+  Widget _buildAdquirenteCard(Adquirentes adquirente) {
+    final habilitada = _adquirentesAtivasIds.contains(adquirente.codigo);
+    return Card(
+      elevation: 2,
+      shadowColor: Colors.black.withOpacity(0.1),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: () {
+          if (habilitada) {
+            _mostrarFormularioPopup(context, adquirente);
+          } else {
+            _mostrarSnackBar(
+              'Adquirente "${adquirente.nome ?? ''}" não habilitada.',
+              Colors.orange,
+            );
+          }
+        },
+        child: Opacity(
+          opacity: habilitada ? 1.0 : 0.6,
+          child: ColorFiltered(
+            colorFilter: habilitada
+                ? const ColorFilter.mode(Colors.transparent, BlendMode.dst)
+                : const ColorFilter.matrix(<double>[
+                    0.2126,
+                    0.7152,
+                    0.0722,
+                    0,
+                    0,
+                    0.2126,
+                    0.7152,
+                    0.0722,
+                    0,
+                    0,
+                    0.2126,
+                    0.7152,
+                    0.0722,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    1,
+                    0,
+                  ]),
+            child: Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Expanded(
-                    child: TextField(
-                      controller: _pesquisaController,
-                      onChanged: (_) => _filtrarAdquirentes(),
-                     // style: const TextStyle(color: Colors.white),
-                      decoration: const InputDecoration(
-                        labelText: 'Pesquisar Adquirente',
-                        prefixIcon: Icon(Icons.search, color: Colors.white),
-                        //labelStyle: TextStyle(color: Colors.white),
-                        border: OutlineInputBorder(),
-                        enabledBorder: OutlineInputBorder(
-                          borderSide: BorderSide(color: Colors.black45),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderSide: BorderSide(color: Colors.black45),
+                    child: SizedBox(
+                      width: 80,
+                      height: 80,
+                      child: Image.network(
+                        adquirente.urlImage ?? '',
+                        fit: BoxFit.contain,
+                        errorBuilder: (_, __, ___) => const Icon(
+                          Icons.business,
+                          size: 50,
+                          color: Colors.grey,
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 16),
-                  IconButton(
-                    icon: const Icon(Icons.refresh, color: Colors.black45),
-                    tooltip: 'Recarregar Tudo',
-                    onPressed: _carregarAdquirentes,
+                  const SizedBox(height: 12),
+                  Text(
+                    adquirente.nome ?? '',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.filter_alt, color: Colors.black45),
-                    tooltip: 'Somente Habilitadas',
-                    onPressed: _carregarSomenteAdquirentesHabilitadas,
+                  const SizedBox(height: 4),
+                  Text(
+                    'ID: ${adquirente.codigo}',
+                    style: const TextStyle(fontSize: 10, color: Colors.grey),
                   ),
                 ],
               ),
             ),
-            Expanded(child: _buildGridAdquirentes()),
-          ],
+          ),
         ),
       ),
     );
   }
 
-  Future<void> _mostrarFormularioPopup(BuildContext context, Adquirentes adquirente) async {
+  Future<void> _mostrarFormularioPopup(
+    BuildContext context,
+    Adquirentes adquirente,
+  ) async {
+    // SUA LÓGICA ORIGINAL
     final tipoAdquirente = TipoAdquirente.values.firstWhere(
-          (e) => e.name.toLowerCase() == (adquirente.nome ?? '').toLowerCase(),
+      (e) => e.name.toLowerCase() == (adquirente.nome ?? '').toLowerCase(),
       orElse: () => TipoAdquirente.Default,
     );
 
@@ -221,39 +338,17 @@ class _AdquirentePageState extends State<AdquirentePage> {
     TipoArquivo tipoDeArquivo = TipoArquivo.pagamento;
     DateTime dataInicio = DateTime.now().subtract(const Duration(days: 1));
     DateTime dataFim = DateTime.now();
-    List<int> refPRId = [];
     final refController = TextEditingController();
     bool carregandoEnvio = false;
     String? erroMensagem;
 
     await showDialog(
       context: context,
+      barrierDismissible: !carregandoEnvio,
       builder: (BuildContext dialogContext) {
         return StatefulBuilder(
           builder: (context, setStateInDialog) {
-            Future<void> enviar() async {
-              setStateInDialog(() => carregandoEnvio = true);
-              try {
-                final config = AdquirenteConfigFactory.criar(
-                  id: adquirente.codigo!,
-                  tipoAdquirente: tipoAdquirente,
-                  dataInicio: dataInicio,
-                  dataFim: dataFim,
-                  tipoDeArquivo: tipoDeArquivo,
-                  refPRId: refPRId,
-                );
-                await IntegracaoAtivaRepository().enviarRequisicao(config);
-                if (Navigator.of(dialogContext).canPop()) {
-                  Navigator.of(dialogContext).pop();
-                }
-                _mostrarSnackBar('Solicitação agendada com sucesso!', Colors.green);
-              } catch (e) {
-                _mostrarSnackBar('Erro ao enviar requisição.', Colors.red);
-              } finally {
-                if (mounted) setStateInDialog(() => carregandoEnvio = false);
-              }
-            }
-
+            // SEUS MÉTODOS INTERNOS DO POPUP (INTACTOS)
             Future<void> selecionarData({required bool isInicio}) async {
               final selecionada = await showDatePicker(
                 context: context,
@@ -263,66 +358,157 @@ class _AdquirentePageState extends State<AdquirentePage> {
               );
               if (selecionada != null) {
                 setStateInDialog(() {
-                  if (isInicio) {
+                  if (isInicio)
                     dataInicio = selecionada;
-                  } else {
+                  else
                     dataFim = selecionada;
-                  }
                 });
               }
             }
 
+            void enviar() async {
+              if (dataInicio.isAfter(dataFim)) {
+                setStateInDialog(() {
+                  erroMensagem = 'Data inicial não pode ser maior que a final.';
+                });
+                return; // Interrompe a execução se a validação falhar
+              }
+
+              if (refController.text.trim().isEmpty) {
+                setStateInDialog(() {
+                  erroMensagem = 'Informe ao menos um ID de referência.';
+                });
+                return; // Interrompe a execução se a validação falhar
+              }
+
+              // Se as validações passaram, limpa a mensagem de erro e inicia o carregamento
+              setStateInDialog(() {
+                erroMensagem = null;
+                carregandoEnvio = true;
+              });
+
+              try {
+                final refPRId = refController.text
+                    .split(RegExp(r'[\s,]+'))
+                    .where((e) => e.isNotEmpty)
+                    .map((e) => int.tryParse(e.trim()))
+                    .where((e) => e != null)
+                    .cast<int>()
+                    .toList();
+
+                final config = AdquirenteConfigFactory.criar(
+                  id: adquirente.codigo!,
+                  tipoAdquirente: tipoAdquirente,
+                  dataInicio: dataInicio,
+                  dataFim: dataFim,
+                  tipoDeArquivo: tipoDeArquivo,
+                  refPRId: refPRId,
+                );
+
+                await IntegracaoAtivaRepository().enviarRequisicao(config);
+
+                if (Navigator.of(dialogContext).canPop()) {
+                  Navigator.of(dialogContext).pop();
+                }
+                _mostrarSnackBar(
+                  'Solicitação agendada com sucesso!',
+                  Colors.green,
+                );
+              } catch (e) {
+                _mostrarSnackBar('Erro ao enviar requisição.', Colors.red);
+              } finally {
+                if (mounted) {
+                  setStateInDialog(() => carregandoEnvio = false);
+                }
+              }
+            }
+
+            final inputBorderStyle = OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+            );
+
+            // AlertDialog com o novo design
             return AlertDialog(
-              title: Text('Solicitar arquivo ${adquirente.nome ?? "Adquirente"}'),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              titlePadding: const EdgeInsets.all(0),
+              contentPadding: const EdgeInsets.all(24),
+              actionsPadding: const EdgeInsets.all(24),
+              title: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 24, 16, 16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Solicitar: ${adquirente.nome}',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 20,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: carregandoEnvio
+                          ? null
+                          : () => Navigator.of(dialogContext).pop(),
+                      splashRadius: 20,
+                    ),
+                  ],
+                ),
+              ),
               content: SizedBox(
                 width: MediaQuery.of(context).size.width * 0.4,
-                height: MediaQuery.of(context).size.height * 0.5,
                 child: SingleChildScrollView(
                   child: Form(
                     key: formKey,
                     child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         TextFormField(
                           initialValue: (adquirente.nome ?? '').toUpperCase(),
-                          decoration: const InputDecoration(labelText: 'Adquirente'),
+                          decoration: InputDecoration(
+                            labelText: 'Adquirente',
+                            border: inputBorderStyle,
+                          ),
                           enabled: false,
                         ),
                         const SizedBox(height: 16),
                         DropdownButtonFormField<TipoArquivo>(
                           value: tipoDeArquivo,
                           items: TipoArquivo.values
-                              .map((e) => DropdownMenuItem(
-                            value: e,
-                            child: Text(e.name.toUpperCase()),
-                          ))
+                              .map(
+                                (e) => DropdownMenuItem(
+                                  value: e,
+                                  child: Text(e.name.toUpperCase()),
+                                ),
+                              )
                               .toList(),
-                          onChanged: (v) => setStateInDialog(() => tipoDeArquivo = v!),
-                          decoration: const InputDecoration(labelText: 'Tipo de Operação'),
+                          onChanged: (v) =>
+                              setStateInDialog(() => tipoDeArquivo = v!),
+                          decoration: InputDecoration(
+                            labelText: 'Tipo de Arquivo',
+                            border: inputBorderStyle,
+                          ),
                         ),
                         const SizedBox(height: 16),
                         Row(
                           children: [
                             Expanded(
-                              child: InkWell(
-                                onTap: () => selecionarData(isInicio: true),
-                                child: InputDecorator(
-                                  decoration: const InputDecoration(labelText: 'Data Início', ),
-                                  child: Text(
-                                    '${dataInicio.day.toString().padLeft(2, '0')}/${dataInicio.month.toString().padLeft(2, '0')}/${dataInicio.year}', style: TextStyle(color: Colors.red),
-                                  ),
-                                ),
+                              child: _buildDateField(
+                                'Data Início',
+                                dataInicio,
+                                () => selecionarData(isInicio: true),
                               ),
                             ),
                             const SizedBox(width: 16),
                             Expanded(
-                              child: InkWell(
-                                onTap: () => selecionarData(isInicio: false),
-                                child: InputDecorator(
-                                  decoration: const InputDecoration(labelText: 'Data Fim'),
-                                  child: Text(
-                                    '${dataFim.day.toString().padLeft(2, '0')}/${dataFim.month.toString().padLeft(2, '0')}/${dataFim.year}',
-                                  ),
-                                ),
+                              child: _buildDateField(
+                                'Data Fim',
+                                dataFim,
+                                () => selecionarData(isInicio: false),
                               ),
                             ),
                           ],
@@ -330,76 +516,88 @@ class _AdquirentePageState extends State<AdquirentePage> {
                         const SizedBox(height: 16),
                         TextFormField(
                           controller: refController,
-                          decoration: const InputDecoration(
-                            labelText: 'Repr (IDs separados por vírgula)',
-                            hintText: 'Ex: 123,456,789',
+                          decoration: InputDecoration(
+                            labelText: 'Repr (IDs)',
+                            hintText: 'IDs separados por vírgula ou espaço',
+                            border: inputBorderStyle,
                           ),
-                          onChanged: (value) {
-                            refPRId = value
-                                .split(',')
-                                .map((e) => int.tryParse(e.trim()))
-                                .where((e) => e != null)
-                                .cast<int>()
-                                .toList();
-                            setStateInDialog(() {});
-                          },
+                          minLines: 2,
+                          maxLines: 4,
                         ),
-                        const SizedBox(height: 16),
                         if (erroMensagem != null)
-                          Text(erroMensagem!, style: const TextStyle(color: Colors.red)),
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8.0),
+                            child: Text(
+                              erroMensagem!,
+                              style: const TextStyle(
+                                color: Colors.red,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
                       ],
                     ),
                   ),
                 ),
               ),
               actions: [
-                SizedBox(
-                  width: double.infinity,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      ElevatedButton(
-                        onPressed: carregandoEnvio
-                            ? null
-                            : () {
-                          if (dataInicio.isAfter(dataFim)) {
-                            setStateInDialog(() => erroMensagem = 'Data inicial não pode ser maior que a final.');
-                            return;
-                          }
-                          if (refPRId.isEmpty) {
-                            setStateInDialog(() => erroMensagem = 'Informe ao menos um ID de referência.');
-                            return;
-                          }
-                          setStateInDialog(() => erroMensagem = null);
-                          enviar();
-                        },
-                        style: ElevatedButton.styleFrom(
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
+                // SEUS BOTÕES DE AÇÃO COM O NOVO DESIGN
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    ElevatedButton(
+                      onPressed: carregandoEnvio ? null : enviar,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Theme.of(context).primaryColor,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        child: const Text('EVIAR'),
                       ),
-                      const SizedBox(height: 8),
-                      TextButton(
-                        onPressed: () => Navigator.of(dialogContext).pop(),
-                        style: TextButton.styleFrom(
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                        ),
-                        child: const Text('CANCELAR'),
-                      ),
-                    ],
-                  ),
+                      child: carregandoEnvio
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Text('ENVIAR'),
+                    ),
+                    const SizedBox(height: 8),
+                    TextButton(
+                      onPressed: carregandoEnvio
+                          ? null
+                          : () => Navigator.of(dialogContext).pop(),
+                      child: const Text('CANCELAR'),
+                    ),
+                  ],
                 ),
               ],
             );
           },
         );
       },
+    );
+  }
+
+  Widget _buildDateField(String label, DateTime date, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      child: InputDecorator(
+        decoration: InputDecoration(
+          labelText: label,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+          ),
+        ),
+        child: Text(
+          '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}',
+        ),
+      ),
     );
   }
 }

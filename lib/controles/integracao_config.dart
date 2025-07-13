@@ -7,6 +7,7 @@ import '../interfaces/Iconfig.dart';
 import '../modelos/integracao_prametros.dart';
 
 class IntegracaoConfig implements IConfig {
+
   final IntegracaoPrametros parametros;
   final TipoArquivo tipoDeArquivo;
 
@@ -35,16 +36,10 @@ class IntegracaoConfig implements IConfig {
     final rawEnv = dotenv.env['ADQUIRENTES_POR_TIPO'];
 
     final Set<int> adquirentesPorTipo = rawEnv != null
-        ? (jsonDecode(rawEnv) as List<dynamic>)
-        .map((e) => int.tryParse(e.toString()))
-        .whereType<int>()
-        .toSet()
+        ? (jsonDecode(rawEnv) as List<dynamic>).map((e) => int.tryParse(e.toString())).whereType<int>().toSet()
         : {};
 
-    final chave = adquirentesPorTipo.contains(parametros.IdIntegracao)
-        ? 'Tipo'
-        : 'step';
-
+    final chave = adquirentesPorTipo.contains(parametros.IdIntegracao) ? 'Tipo' : 'step';
     body[chave] = tipoDeArquivo.valor;
 
     return body;

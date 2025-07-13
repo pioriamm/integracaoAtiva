@@ -3,18 +3,11 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
-
-// --- SUAS DEPENDÊNCIAS E ARQUIVOS DE PROJETO ---
-// Mantive a estrutura para que você possa conectar seus arquivos reais.
-// Certifique-se de que os caminhos de import estão corretos no seu projeto.
 import '../controles/adquirente_config_factory.dart';
-import '../enum/tipo_adquirente.dart';
 import '../enum/tipo_arquivo.dart';
 import '../modelos/adquirentes.dart';
 import '../repository/adquirente_repository.dart';
 import '../repository/integracao_ativa_repository.dart';
-
-// --- PÁGINA PRINCIPAL COM O NOVO LAYOUT ---
 class AdquirentePage extends StatefulWidget {
   const AdquirentePage({super.key});
 
@@ -31,13 +24,10 @@ class _AdquirentePageState extends State<AdquirentePage> {
 
   @override
   void initState() {
-    super.initState();
-
     final String? idAdquirentes = dotenv.env['ADQUIRENTES_HABILITADAS'];
-    _adquirentesAtivasIds = idAdquirentes != null
-        ? List<int>.from(jsonDecode(idAdquirentes))
-        : [];
+    _adquirentesAtivasIds = idAdquirentes!.isNotEmpty ? List<int>.from(jsonDecode(idAdquirentes)) : [];
     _carregarAdquirentes();
+    super.initState();
   }
 
   Future<void> _carregarAdquirentes() async {
@@ -45,8 +35,7 @@ class _AdquirentePageState extends State<AdquirentePage> {
     final adquirentes = await AdquirenteRepository.buscarAdquirentes();
     if (mounted) {
       setState(() {
-        _listaAdquirentes = adquirentes
-          ..sort((a, b) => (a.nome ?? '').compareTo(b.nome ?? ''));
+        _listaAdquirentes = adquirentes..sort((a, b) => (a.nome ?? '').compareTo(b.nome ?? ''));
         _carregandoAdquirentes = false;
       });
     }
@@ -54,14 +43,11 @@ class _AdquirentePageState extends State<AdquirentePage> {
 
   Future<void> _carregarSomenteAdquirentesHabilitadas() async {
     setState(() => _carregandoAdquirentes = true);
-    final adquirentes = await AdquirenteRepository.buscarAdquirentes();
+    final copiaAdquirente = _listaAdquirentes;
     if (mounted) {
       setState(() {
-        _listaAdquirentes =
-            adquirentes
-                .where((a) => _adquirentesAtivasIds.contains(a.codigo))
-                .toList()
-              ..sort((a, b) => (a.nome ?? '').compareTo(b.nome ?? ''));
+        _listaAdquirentes = copiaAdquirente.where((a) => _adquirentesAtivasIds.contains(a.codigo)).toList()
+          ..sort((a, b) => (a.nome ?? '').compareTo(b.nome ?? ''));
         _carregandoAdquirentes = false;
       });
     }
@@ -87,15 +73,15 @@ class _AdquirentePageState extends State<AdquirentePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC), // Cor de fundo suave
+      backgroundColor: Theme.of(context).colorScheme.onPrimary,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24.0),
           child: Column(
             children: [
-              _buildHeader(),
-              _buildToolbar(),
-              Expanded(child: _buildGridAdquirentes()),
+              _tituloPagina(),
+              _barraDePesquisa(),
+              Expanded(child: _gridAdquirentes()),
             ],
           ),
         ),
@@ -103,7 +89,7 @@ class _AdquirentePageState extends State<AdquirentePage> {
     );
   }
 
-  Widget _buildHeader() {
+  Widget _tituloPagina() {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 32.0),
       child: Column(
@@ -128,7 +114,7 @@ class _AdquirentePageState extends State<AdquirentePage> {
     );
   }
 
-  Widget _buildToolbar() {
+  Widget _barraDePesquisa() {
     return Padding(
       padding: const EdgeInsets.only(bottom: 24.0),
       child: Row(
@@ -161,13 +147,13 @@ class _AdquirentePageState extends State<AdquirentePage> {
             ),
           ),
           const SizedBox(width: 8),
-          _buildToolbarButton(
+          _botoesBarraPesquisa(
             Icons.refresh,
             'Recarregar Todas',
             _carregarAdquirentes,
           ),
           const SizedBox(width: 8),
-          _buildToolbarButton(
+          _botoesBarraPesquisa(
             Icons.filter_alt,
             'Filtrar Habilitadas',
             _carregarSomenteAdquirentesHabilitadas,
@@ -177,7 +163,7 @@ class _AdquirentePageState extends State<AdquirentePage> {
     );
   }
 
-  Widget _buildToolbarButton(
+  Widget _botoesBarraPesquisa(
     IconData icon,
     String tooltip,
     VoidCallback onPressed,
@@ -197,7 +183,7 @@ class _AdquirentePageState extends State<AdquirentePage> {
     );
   }
 
-  Widget _buildGridAdquirentes() {
+  Widget _gridAdquirentes() {
     if (_carregandoAdquirentes) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -228,7 +214,7 @@ class _AdquirentePageState extends State<AdquirentePage> {
             columnCount: crossAxisCount,
             duration: const Duration(milliseconds: 375),
             child: ScaleAnimation(
-              child: FadeInAnimation(child: _buildAdquirenteCard(adquirente)),
+              child: FadeInAnimation(child: _adquirenteCard(adquirente)),
             ),
           );
         },
@@ -236,7 +222,7 @@ class _AdquirentePageState extends State<AdquirentePage> {
     );
   }
 
-  Widget _buildAdquirenteCard(Adquirentes adquirente) {
+  Widget _adquirenteCard(Adquirentes adquirente) {
     final habilitada = _adquirentesAtivasIds.contains(adquirente.codigo);
     return Card(
       elevation: 2,
@@ -246,7 +232,7 @@ class _AdquirentePageState extends State<AdquirentePage> {
         borderRadius: BorderRadius.circular(16),
         onTap: () {
           if (habilitada) {
-            _mostrarFormularioPopup(context, adquirente);
+            _popupSolicitarArquivo(context, adquirente);
           } else {
             _mostrarSnackBar(
               'Adquirente "${adquirente.nome ?? ''}" não habilitada.',
@@ -324,17 +310,11 @@ class _AdquirentePageState extends State<AdquirentePage> {
     );
   }
 
-  Future<void> _mostrarFormularioPopup(
+  Future<void> _popupSolicitarArquivo(
     BuildContext context,
     Adquirentes adquirente,
   ) async {
-    // SUA LÓGICA ORIGINAL
-    final tipoAdquirente = TipoAdquirente.values.firstWhere(
-      (e) => e.name.toLowerCase() == (adquirente.nome ?? '').toLowerCase(),
-      orElse: () => TipoAdquirente.Default,
-    );
-
-    final formKey = GlobalKey<FormState>();
+     final formKey = GlobalKey<FormState>();
     TipoArquivo tipoDeArquivo = TipoArquivo.pagamento;
     DateTime dataInicio = DateTime.now().subtract(const Duration(days: 1));
     DateTime dataFim = DateTime.now();
@@ -398,7 +378,6 @@ class _AdquirentePageState extends State<AdquirentePage> {
 
                 final config = AdquirenteConfigFactory.criar(
                   id: adquirente.codigo!,
-                  tipoAdquirente: tipoAdquirente,
                   dataInicio: dataInicio,
                   dataFim: dataFim,
                   tipoDeArquivo: tipoDeArquivo,
@@ -497,7 +476,7 @@ class _AdquirentePageState extends State<AdquirentePage> {
                         Row(
                           children: [
                             Expanded(
-                              child: _buildDateField(
+                              child: _campoDataPtbr(
                                 'Data Início',
                                 dataInicio,
                                 () => selecionarData(isInicio: true),
@@ -505,7 +484,7 @@ class _AdquirentePageState extends State<AdquirentePage> {
                             ),
                             const SizedBox(width: 16),
                             Expanded(
-                              child: _buildDateField(
+                              child: _campoDataPtbr(
                                 'Data Fim',
                                 dataFim,
                                 () => selecionarData(isInicio: false),
@@ -583,7 +562,7 @@ class _AdquirentePageState extends State<AdquirentePage> {
     );
   }
 
-  Widget _buildDateField(String label, DateTime date, VoidCallback onTap) {
+  Widget _campoDataPtbr(String label, DateTime date, VoidCallback onTap) {
     return InkWell(
       onTap: onTap,
       child: InputDecorator(

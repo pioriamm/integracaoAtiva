@@ -1,0 +1,101 @@
+@startuml
+skinparam classAttributeIconSize 0
+StatelessWidget <|-- AdquirenteApp
+class AdquirenteApp {
+  +brightness
+  +textTheme
+  +theme
+  +build()
+}
+class AdquirenteConfigFactory {
+}
+IConfig <|.. IntegracaoConfig
+class IntegracaoConfig {
+  +adquirentesPorTipo
+  +body
+  +chave
+  +parametros
+  +rawEnv
+  +tipoDeArquivo
+}
+class Helper {
+  +dataFormatada
+  +formatarData()
+}
+class IConfig {
+}
+class Adquirentes {
+  +codigo
+  +data
+  +nome
+  +urlImage
+}
+class IntegracaoPrametros {
+  +IdIntegracao
+  +dataFim
+  +dataInicio
+  +listaRefosPrs
+  +tipoDeArquivo
+}
+StatefulWidget <|-- AdquirentePage
+class AdquirentePage {
+  +_adquirentesAtivasIds
+  +_carregandoAdquirentes
+  +_filtro
+  +_listaAdquirentes
+  +_pesquisaController
+  +adquirente
+  +adquirentes
+  +carregandoEnvio
+  +config
+  +copiaAdquirente
+  +crossAxisCount
+  +dataFim
+  +dataInicio
+  +erroMensagem
+  +false
+  +filtrados
+  +formKey
+  +habilitada
+  +idAdquirentes
+  +inputBorderStyle
+  +null
+  +refController
+  +refPRId
+  +return
+  +screenWidth
+  +selecionada
+  +tipoDeArquivo
+  +true
+  +AnimationLimiter()
+  +Card()
+  +StatefulBuilder()
+  +_adquirenteCard()
+  +_barraDePesquisa()
+  +_botoesBarraPesquisa()
+  +_campoDataPtbr()
+  +_filtrarAdquirentes()
+  +_gridAdquirentes()
+  +_mostrarSnackBar()
+  +_tituloPagina()
+  +build()
+  +initState()
+  +setStateInDialog()
+  +showDialog()
+}
+class AdquirenteRepository {
+  +_baseUrl
+  +_key
+  +decodedData
+  +http
+  +listaDeItens
+  +response
+  +uri
+}
+class IntegracaoAtivaRepository {
+  +bodyrequisicao
+  +config
+  +http
+  +response
+}
+@enduml

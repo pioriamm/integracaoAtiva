@@ -14,13 +14,9 @@ class IntegracaoAtivaRepository {
 
     final response = await http.post(
       Uri.parse(dotenv.env['URL_BASE_INTEGRACAO']!),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ${dotenv.env['AUTH_TOKEN']}',
-      },
+      headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ${dotenv.env['AUTH_TOKEN']}'},
       body: jsonEncode(bodyrequisicao.gerarPayload()),
     );
-
 
     if (response.statusCode == 200) {
       if (kDebugMode) {

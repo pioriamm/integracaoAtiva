@@ -18,8 +18,9 @@ class AdquirenteApp extends StatelessWidget {
     final brightness = View.of(context).platformDispatcher.platformBrightness;
     TextTheme textTheme = createTextTheme(context, "Roboto", "Mukta");
     MaterialTheme theme = MaterialTheme(textTheme);
+
     return MaterialApp(
-      debugShowCheckedModeBanner: false,
+      debugShowCheckedModeBanner: true,
       title: 'Integração Adquirentes',
       theme: brightness == Brightness.light ? theme.light() : theme.dark(),
       home: const AdquirentePage(),

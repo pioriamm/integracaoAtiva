@@ -202,9 +202,9 @@ class _AdquirentePageState extends State<AdquirentePage> {
         padding: const EdgeInsets.only(bottom: 16),
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: crossAxisCount,
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
-          childAspectRatio: 0.9,
+          crossAxisSpacing: 30,
+          mainAxisSpacing: 30,
+          childAspectRatio: 3,
         ),
         itemCount: filtrados.length,
         itemBuilder: (context, index) {
@@ -226,7 +226,7 @@ class _AdquirentePageState extends State<AdquirentePage> {
     final habilitada = _adquirentesAtivasIds.contains(adquirente.codigo);
     return Card(
       elevation: 2,
-      shadowColor: Colors.black.withOpacity(0.1),
+      shadowColor: Colors.black.withValues(alpha: 0.1),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),

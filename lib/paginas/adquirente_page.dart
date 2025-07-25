@@ -274,8 +274,8 @@ class _AdquirentePageState extends State<AdquirentePage> {
                 children: [
                   Expanded(
                     child: SizedBox(
-                      width: 80,
-                      height: 80,
+                      width: 100,
+                      height: 100,
                       child: Image.network(
                         adquirente.urlImage ?? '',
                         fit: BoxFit.contain,
